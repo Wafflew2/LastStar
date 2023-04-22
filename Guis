@@ -1,0 +1,1174 @@
+local rs = game:GetService("RunService")
+local inputs = game:GetService("UserInputService")
+local tweens = game:GetService("TweenService")
+local plr = game.Players.LocalPlayer.Character
+local script = plr
+local Loud = 0
+local LocalLoudness = 0
+local mouse = game:GetService("Players").LocalPlayer:GetMouse()
+mouse.TargetFilter = workspace:WaitForChild("LastStarMouseIgnore")
+
+wait(.1)
+--[[if workspace:FindFirstChild("LastStarPlace") then
+	local light = Instance.new("ColorCorrectionEffect",game:GetService("Lighting"))
+	game:GetService("Debris"):AddItem(light,3)
+	light.Contrast = -2
+	light.Brightness = 1
+	local info = TweenInfo.new(.5,Enum.EasingStyle.Sine,Enum.EasingDirection.Out,0,false,0)
+	local prop = {Brightness=0}
+	local tween = tweens:Create(light,info,prop)
+	tween:Play()
+	wait(1)
+	light.TintColor = Color3.fromRGB(255,0,0)
+	local info = TweenInfo.new(2,Enum.EasingStyle.Quint,Enum.EasingDirection.In,0,false,0)
+	local prop = {Contrast=0;TintColor=Color3.fromRGB(255,255,255)}
+	local tween = tweens:Create(light,info,prop)
+	tween:Play()
+end]]
+
+local gui = game.Players.LocalPlayer.PlayerGui.PlayerGui
+
+gui:WaitForChild("HelpMenu")
+gui.HelpButton.MouseButton1Click:Connect(function()
+	if gui.HelpMenu.Visible == false then
+		gui.HelpMenu.Visible = true
+	else
+		gui.HelpMenu.Visible = false
+	end
+end)
+
+script:WaitForChild("Events"):WaitForChild("TweenRoot").OnClientEvent:Connect(function(tim,style,direction,prop)
+	local info = TweenInfo.new(tim,style,direction,0,false,0)
+	local tween = tweens:Create(script.Parent.Parent:WaitForChild("HumanoidRootPart"),info,prop)
+	tween:Play()
+end)
+
+gui:WaitForChild("HelpMenu"):WaitForChild("BG"):WaitForChild("UpdateList"):WaitForChild("MouseFrame"):WaitForChild("ListCrop"):WaitForChild("ListBG").Parent:WaitForChild("ListContent")
+
+local totalupdatesize = 0
+local updatequeue = {}
+for i,v in ipairs(gui.HelpMenu.BG.UpdateList.MouseFrame.ListCrop.ListContent:GetChildren()) do
+	local up = string.split(v.Name,"")
+	v:WaitForChild("Update")
+	v.Update.Text = "v"..up[1].."."..up[2].."."..up[3]
+	v.Size = UDim2.new(1,0,0,v:WaitForChild("Contents").TextBounds.Y+30)
+	local f = Instance.new("Frame",gui.HelpMenu.BG.UpdateList.MouseFrame.ListCrop.ListBG)
+	f.Name = v.Name
+	f.Size = v.Size
+	f.BackgroundTransparency = 1
+	totalupdatesize += v.Contents.TextBounds.Y+40
+	local pos = Instance.new("NumberValue",f)
+	pos.Name = "Pos"
+	table.insert(updatequeue,#updatequeue+1,v)
+end
+gui.HelpMenu.BG.UpdateList.MouseFrame.ListCrop.ListBG.Size = UDim2.new(1,0,0,totalupdatesize)
+gui.HelpMenu.BG.UpdateList.MouseFrame.ListCrop.ListContent.Size = UDim2.new(1,0,0,totalupdatesize)
+
+game:GetService("Players").LocalPlayer.CameraMaxZoomDistance = 100000
+local updatescrolling = false
+gui.HelpMenu.BG.UpdateList.MouseFrame.MouseEnter:Connect(function()
+	updatescrolling = true
+	local mag = (script.Parent.Parent.HumanoidRootPart.Position-workspace.CurrentCamera.CFrame.Position).Magnitude
+	game:GetService("Players").LocalPlayer.CameraMaxZoomDistance = mag
+	game:GetService("Players").LocalPlayer.CameraMinZoomDistance = mag
+end)
+gui.HelpMenu.BG.UpdateList.MouseFrame.MouseLeave:Connect(function()
+	updatescrolling = false
+	game:GetService("Players").LocalPlayer.CameraMaxZoomDistance = 100000
+	game:GetService("Players").LocalPlayer.CameraMinZoomDistance = 0
+end)
+local info = TweenInfo.new(.3,Enum.EasingStyle.Quint,Enum.EasingDirection.Out,0,false,0)
+mouse.WheelForward:Connect(function()
+	if updatescrolling == true then
+		local prop = {Value=math.clamp(gui.UpdateScroll.Value+125,-totalupdatesize,0)}
+		local tween = tweens:Create(gui.UpdateScroll,info,prop)
+		tween:Play()
+	end
+end)
+mouse.WheelBackward:Connect(function()
+	if updatescrolling == true then
+		local prop = {Value=math.clamp(gui.UpdateScroll.Value-125,-totalupdatesize,0)}
+		local tween = tweens:Create(gui.UpdateScroll,info,prop)
+		tween:Play()
+	end
+end)
+gui:WaitForChild("HelpMenu"):WaitForChild("BG"):WaitForChild("UpdateList"):WaitForChild("Up")
+gui.HelpMenu.BG.UpdateList.Up.MouseButton1Click:Connect(function()
+	local prop = {Value=math.clamp(gui.UpdateScroll.Value+200,-totalupdatesize,0)}
+	local tween = tweens:Create(gui.UpdateScroll,info,prop)
+	tween:Play()
+end)
+gui:WaitForChild("HelpMenu"):WaitForChild("BG"):WaitForChild("UpdateList"):WaitForChild("Down")
+gui.HelpMenu.BG.UpdateList.Down.MouseButton1Click:Connect(function()
+	local prop = {Value=math.clamp(gui.UpdateScroll.Value-200,-totalupdatesize,0)}
+	local tween = tweens:Create(gui.UpdateScroll,info,prop)
+	tween:Play()
+end)
+
+local reversequeue = {}
+for i = 1,#updatequeue do
+	table.insert(reversequeue,#reversequeue+1,i)
+end
+for i,v in pairs(updatequeue) do
+	table.insert(reversequeue,1,v)
+end
+for x = 1,50 do
+	for i,v in ipairs(reversequeue) do
+		if typeof(v) ~= "Instance" then
+			table.remove(reversequeue,i)
+		end
+	end
+end
+local lastoffset = 0
+for i,v in ipairs(reversequeue) do
+	local f = gui.HelpMenu.BG.UpdateList.MouseFrame.ListCrop.ListBG:FindFirstChild(v.Name)
+	f:WaitForChild("Pos").Value = lastoffset
+	lastoffset += v.Contents.TextBounds.Y+50
+end
+function change(rules,instructions,updates)
+	gui.HelpMenu.BG.Rules.Visible = rules
+	gui.HelpMenu.BG.Instructions.Visible = instructions
+	gui.HelpMenu.BG.UpdateList.Visible = updates
+end
+gui.HelpMenu.BG.RulesButton.MouseButton1Click:Connect(function()
+	change(true,false,false)
+end)
+gui.HelpMenu.BG.InstructionsButton.MouseButton1Click:Connect(function()
+	change(false,true,false)
+end)
+gui.HelpMenu.BG.UpdatesButton.MouseButton1Click:Connect(function()
+	change(false,false,true)
+end)
+
+local thumbstickframe = nil
+local isonthumbstick = false
+if inputs.MouseEnabled == false and inputs.KeyboardEnabled == false and inputs.TouchEnabled == true then
+	gui:WaitForChild("MobileFormChange").Visible=true
+	gui:WaitForChild("MobileSongMute").Visible=true
+	for i,v in pairs(gui.MobileAttacks:GetChildren()) do
+		v.Visible=true
+	end
+	game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("TouchGui").DisplayOrder = 1
+end
+
+local chosenmove = Enum.KeyCode.Return
+local chosenleftclick = 0
+
+gui:WaitForChild("MobileAttacks")
+for i,v in ipairs(gui.MobileAttacks:GetChildren()) do
+	local info = TweenInfo.new(.1,Enum.EasingStyle.Sine,Enum.EasingDirection.Out)
+	local prop1,prop2 = {Value=1},{Value=0}
+	local tween1,tween2 = tweens:Create(v.Border,info,prop1),tweens:Create(v.Border,info,prop2)
+	v.MouseButton1Click:Connect(function()
+		if v.SelectedBool.Value == false then
+			v.SelectedBool.Value = true
+			if inputs.MouseEnabled == false and inputs.KeyboardEnabled == false and inputs.TouchEnabled == true then
+				if i == 1 then
+					chosenmove = Enum.KeyCode.C
+					chosenleftclick = 0
+				elseif i == 2 then
+					chosenmove = Enum.KeyCode.F
+					chosenleftclick = 0
+				elseif i == 3 then
+					chosenmove = Enum.KeyCode.V
+					chosenleftclick = 0
+				elseif i == 4 then
+					chosenmove = Enum.KeyCode.Z
+					chosenleftclick = 0
+				elseif i == 5 then
+					chosenmove = Enum.KeyCode.X
+					chosenleftclick = 0
+				elseif i == 7 then
+					chosenmove = Enum.KeyCode.One
+					chosenleftclick = 1
+					script.Parent.Events.Key:FireServer(chosenmove,"on")
+				elseif i == 6 then
+					chosenmove = Enum.KeyCode.Two
+					chosenleftclick = 2
+					script.Parent.Events.Key:FireServer(chosenmove,"on")
+				elseif i == 8 then
+					chosenmove = Enum.KeyCode.Three
+					chosenleftclick = 3
+					script.Parent.Events.Key:FireServer(chosenmove,"on")
+				end
+				tween1:Play()
+				for z,x in pairs(gui.MobileAttacks:GetChildren()) do
+					local tween = tweens:Create(x.Border,info,prop2)
+					if x ~= v then
+						x.SelectedBool.Value = false
+						tween:Play()
+					end
+				end
+			end
+		else
+			v.SelectedBool.Value = false
+			tween2:Play()
+			chosenmove = Enum.KeyCode.Return
+			chosenleftclick = 0
+		end
+	end)
+end
+
+function checkmouse()
+	local t = mouse.Target
+	if mouse.Target then
+		if mouse.Target.Name == "HitboxExtension" then
+			t = mouse.Target.Parent
+		end
+	end
+	local dist = (workspace.CurrentCamera.CFrame.Position-mouse.Hit.Position).Magnitude
+	local torso = script.Parent.Parent:WaitForChild("Torso")
+	local LA,RA,head,LL,RL = script.Parent.Parent:WaitForChild("Left Arm"),script.Parent.Parent:WaitForChild("Right Arm"),script.Parent.Parent:WaitForChild("Head"),script.Parent.Parent:WaitForChild("Left Leg"),script.Parent.Parent:WaitForChild("Right Leg")
+	if dist <= 2048 then
+		script.Parent.Events.MouseCFrame:FireServer(mouse.Hit,t,torso.CFrame,LA.CFrame,RA.CFrame,head.CFrame,LL.CFrame,RL.CFrame)
+	else
+		local raypart,raypos,ray = nil,nil,nil
+		local dir = (mouse.Hit.Position-workspace.CurrentCamera.CFrame.Position).Unit*5000
+		local rayposstart = CFrame.new(workspace.CurrentCamera.CFrame.Position,(mouse.Hit.Position-workspace.CurrentCamera.CFrame.Position))
+		local ray = Ray.new(rayposstart.Position,dir)
+		local r,p,n = workspace:FindPartOnRayWithIgnoreList(ray,{game:GetService("Players").LocalPlayer.Character,workspace:WaitForChild("LastStarMouseIgnore")},false,true)
+		if p then
+			script.Parent.Events.MouseCFrame:FireServer(CFrame.new(p),r,torso.CFrame,LA.CFrame,RA.CFrame,head.CFrame,LL.CFrame,RL.CFrame)
+		end
+	end
+end
+
+inputs.TouchStarted:Connect(function(input,aaa)
+	if not aaa then
+		if thumbstickframe then
+			if mouse.Y < (thumbstickframe.AbsolutePosition.Y-thumbstickframe.AbsoluteSize.Y)*-1 or mouse.X > thumbstickframe.AbsolutePosition.X+thumbstickframe.AbsoluteSize.X then
+				checkmouse()
+				if chosenleftclick == 0 then
+					script.Parent.Events.Key:FireServer(chosenmove,"on")
+				else
+					script.Parent.Events.Key:FireServer("mousebutton1","on")
+				end
+			end
+		end
+	end
+end)
+inputs.TouchEnded:Connect(function(input,aaa)
+	if not aaa then
+		checkmouse()
+		script.Parent.Events.Key:FireServer(chosenmove,"off")
+	end
+end)
+
+inputs.InputBegan:Connect(function(key,aaa)
+	if not aaa then
+		if key.UserInputType == Enum.UserInputType.Keyboard then
+			script.Events.Key:FireServer(key.KeyCode,"on")
+			if key.KeyCode == Enum.KeyCode.One or key.KeyCode == Enum.KeyCode.Two or key.KeyCode == Enum.KeyCode.Three then
+				local click = "1"
+				if key.KeyCode == Enum.KeyCode.Two then
+					click = "2"
+				elseif key.KeyCode == Enum.KeyCode.Three then
+					click = "3"
+				end
+				for i,v in ipairs(gui.MobileAttacks:GetChildren()) do
+					local info = TweenInfo.new(.1,Enum.EasingStyle.Sine,Enum.EasingDirection.Out)
+					local prop1,prop2 = {Value=1},{Value=0}
+					local tween1,tween2 = tweens:Create(v.Border,info,prop1),tweens:Create(v.Border,info,prop2)
+					if v.Name == click then
+						tween1:Play()
+						v.SelectedBool.Value = true
+						for z,x in pairs(gui.MobileAttacks:GetChildren()) do
+							local tween = tweens:Create(x.Border,info,prop2)
+							if x ~= v then
+								x.SelectedBool.Value = false
+								tween:Play()
+							end
+						end
+					else
+						v.SelectedBool.Value = false
+						tween2:Play()
+						chosenmove = Enum.KeyCode.Return
+						chosenleftclick = 0
+					end
+				end
+			end
+			if key.KeyCode == Enum.KeyCode.Comma then
+				if inputs.MouseIconEnabled == true then
+					inputs.MouseIconEnabled = false
+				else
+					inputs.MouseIconEnabled = true
+				end
+			end
+		elseif key.UserInputType == Enum.UserInputType.MouseButton1 then
+			script.Parent.Events.Key:FireServer("mousebutton1","on")
+		end
+	end
+end)
+inputs.InputEnded:Connect(function(key)
+	if key.UserInputType == Enum.UserInputType.Keyboard then
+		script.Events.Key:FireServer(key.KeyCode,"off")
+	elseif key.UserInputType == Enum.UserInputType.MouseButton1 then
+		script.Events.Key:FireServer("mousebutton1","off")
+	end
+end)
+
+coroutine.resume(coroutine.create(function()
+	while true do
+		wait(1)
+		for i,v in pairs(workspace:GetDescendants()) do
+			if v:IsA("Humanoid") and v.Parent ~= script.Parent.Parent then
+				for _,c in pairs(v.Parent:GetChildren()) do
+					if c:IsA("Part") and c.Parent.Name ~= "TeleportEffect" then
+						local d = c:FindFirstChild("HitboxExtension")
+						local p = Instance.new("Part",c)
+						p.Name = "HitboxExtension"
+						p.Massless = true
+						p.Size = c.Size+Vector3.new(6,6,6)
+						local w = Instance.new("Weld",p)		w.Part0 = p		w.Part1 = c
+						p.CanCollide=false
+						p.Anchored=false
+						p.Transparency = 1
+						if d then
+							d:Destroy()
+						end
+					end
+				end
+			end
+		end
+	end
+end))
+script.Events:WaitForChild("MouseCFrame")
+repeat
+	wait()
+until game:GetService("Players").LocalPlayer.Character
+coroutine.resume(coroutine.create(function()
+	while true do
+		wait()
+		for i,v in pairs(gui.MobileAttacks:GetChildren()) do
+			local cd = script.Cooldowns:FindFirstChild(v.Name).Cooldown
+			v.Charge.BackgroundColor3 = v.BorderColor3
+			if cd.Value < 1 then
+				v.Charge.BackgroundTransparency = .5
+				v.Charge.Size = UDim2.new(1,0,1,0)
+				local info = TweenInfo.new(.012,Enum.EasingStyle.Sine,Enum.EasingDirection.Out,0,false,0)
+				local prop = {Size = UDim2.new(1,0,1-(cd.Value),0)}
+				local tween = tweens:Create(v.Charge,info,prop)
+				tween:Play()
+			else
+				v.Charge.BackgroundTransparency = 1
+			end
+		end
+		local t = mouse.Target
+		if mouse.Target then
+			if mouse.Target.Name == "HitboxExtension" then
+				t = mouse.Target.Parent
+			end
+		end
+		local dist = (workspace.CurrentCamera.CFrame.Position-mouse.Hit.Position).Magnitude
+		local torso = script:WaitForChild("Torso")
+		local LA,RA,head,LL,RL = script:WaitForChild("Left Arm"),script:WaitForChild("Right Arm"),script:WaitForChild("Head"),script:WaitForChild("Left Leg"),script:WaitForChild("Right Leg")
+		if dist <= 2048 then
+			script.Events.MouseCFrame:FireServer(mouse.Hit,t,torso.CFrame,LA.CFrame,RA.CFrame,head.CFrame,LL.CFrame,RL.CFrame)
+		else
+			local raypart,raypos,ray = nil,nil,nil
+			local dir = (mouse.Hit.Position-workspace.CurrentCamera.CFrame.Position).Unit*5000
+			local rayposstart = CFrame.new(workspace.CurrentCamera.CFrame.Position,(mouse.Hit.Position-workspace.CurrentCamera.CFrame.Position))
+			local ray = Ray.new(rayposstart.Position,dir)
+			local r,p,n = workspace:FindPartOnRayWithIgnoreList(ray,{game:GetService("Players").LocalPlayer.Character,workspace:WaitForChild("LastStarMouseIgnore")},false,true)
+			if p then
+				script.Events.MouseCFrame:FireServer(CFrame.new(p),r,torso.CFrame,LA.CFrame,RA.CFrame,head.CFrame,LL.CFrame,RL.CFrame)
+			end
+		end
+	end
+end))
+
+
+
+-- GUI
+
+function transform(seconds)
+	seconds = math.floor(seconds+.5)
+	local minutes,extra = 0,""
+	
+	if seconds >= 60 then
+		repeat
+			if seconds >= 60 then
+				seconds = seconds - 60
+				minutes = minutes + 1
+			end
+		until seconds < 60
+	end
+	if seconds < 10 then
+		extra = "0"
+	end
+	return(minutes..":"..extra..seconds)
+end
+
+gui.Parent = game:GetService("Players").LocalPlayer.PlayerGui
+
+local aiming = false
+gui:WaitForChild("Music"):WaitForChild("Button")
+gui.Music.Button.MouseEnter:Connect(function()
+	gui.Music.HighLight.BackgroundTransparency = .5
+	gui.Music.HighLight.Glow1.BackgroundTransparency = .75
+	aiming = true
+end)
+gui.Music.Button.MouseLeave:Connect(function()
+	gui.Music.HighLight.BackgroundTransparency = 1
+	gui.Music.HighLight.Glow1.BackgroundTransparency = 1
+	aiming = false
+end)
+
+local sine = 0
+local c3 = Color3.fromRGB
+
+local p,s = c3(0,0,0),c3(0,0,0)
+
+local namegui = script:WaitForChild("Head"):WaitForChild("NameGui")
+local theme = script:WaitForChild("HumanoidRootPart"):WaitForChild("Theme")
+local offset = 0
+local d = workspace:WaitForChild("LastStarMouseIgnore")
+function effect(shape,cframe,sizevector,color,material,transparency,tweentime,easingstyle,easingdirection,reverse,tableprop,newtransparency,transparencystyle)
+	local s = d:FindFirstChild(shape)
+	local count = 0
+	for i,v in pairs(d:GetChildren()) do
+		if v.Name == "EFFECTLIMITER" then
+			count += 1
+		end
+	end
+	local enableeff = true
+	if script.Parent:FindFirstChild("LastStar") then
+		if count > script.Parent.LastStar.Settings.EffectLimit.Value-1 then
+			enableeff = false
+		end
+	end
+	if enableeff == true then
+		if s then
+			local h = s:Clone()
+			local a = 1
+			if reverse == true then
+				a = 2
+			end
+			if h then
+				local limitindicator = Instance.new("StringValue",d)
+				limitindicator.Name = "EFFECTLIMITER"
+				game:GetService("Debris"):AddItem(limitindicator,tweentime*a)
+				game:GetService("Debris"):AddItem(h,tweentime*a)
+				h.Name = "EFFECT"
+				h.Parent = d
+				h.CFrame = cframe
+				h.Size = sizevector
+				h.Color = color
+				h.Material = material
+				h.Anchored=true
+				h.CanCollide=false
+				h.CastShadow=false
+				h.Massless=true
+				h.Transparency=transparency
+				local info = TweenInfo.new(tweentime,easingstyle,easingdirection,0,reverse,0)
+				local prop = tableprop
+				local tween = tweens:Create(h,info,prop)
+				tween:Play()
+				local transparencyinfo = TweenInfo.new(tweentime,transparencystyle,easingdirection,0,reverse,0)
+				local transparencyprop = {Transparency=newtransparency}
+				local transparencytween = tweens:Create(h,transparencyinfo,transparencyprop)
+				transparencytween:Play()
+			end
+		else
+			warn(shape.." is not a valid shape.")
+		end
+	end
+end
+local upperbaroffset = 0
+rs.RenderStepped:Connect(function()
+	for i,v in pairs(gui.HelpMenu.BG.UpdateList.MouseFrame.ListCrop.ListContent:GetChildren()) do
+		local frame = gui.HelpMenu.BG.UpdateList.MouseFrame.ListCrop.ListBG:FindFirstChild(v.Name)
+		if frame then
+			v.Position = UDim2.new(0,0,0,frame:WaitForChild("Pos").Value+gui.UpdateScroll.Value)
+		end
+	end
+	
+	if inputs.MouseEnabled == false and inputs.KeyboardEnabled == false and inputs.TouchEnabled == true then
+		thumbstickframe = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("TouchGui"):FindFirstChild("TouchControlFrame"):FindFirstChild("DynamicThumbstickFrame")
+		if not thumbstickframe then
+			thumbstickframe = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("TouchGui"):FindFirstChild("TouchControlFrame"):FindFirstChild("ThumbstickFrame")
+		end
+		if thumbstickframe then
+			if mouse.Y > (thumbstickframe.AbsolutePosition.Y-thumbstickframe.AbsoluteSize.Y)*-1 and mouse.X < thumbstickframe.AbsolutePosition.X+thumbstickframe.AbsoluteSize.X then
+				isonthumbstick = true
+			else
+				isonthumbstick  =true
+			end
+		end
+	end
+	
+	local t3 = namegui.LowerHalf.FormName.TextColor3
+	local ts3 = namegui.LowerHalf.FormName.TextStrokeColor3
+	
+	upperbaroffset += 2
+	if upperbaroffset > gui.UpperBar.Labeller.TextBounds.X then
+		upperbaroffset = 0
+	end
+	gui.UpperBar.Offsetter.Position = UDim2.new(0,-gui.UpperBar.Labeller.TextBounds.X+upperbaroffset,0,0)
+	gui.UpperBar.Labeller.Text = "|╫|  LAST ★ STAR // "..script.Values.CurrentForm.Value.." // "..string.upper(game:GetService("Players").LocalPlayer.Name).."  |╫|            "
+	gui.UpperBar.BorderColor3 = ts3
+	gui.UpperBar.BackgroundColor3 = t3
+	gui.UpperBar.Shade.BackgroundColor3 = ts3
+	gui.UpperBar.Glow.BackgroundColor3 = ts3
+	gui.HelpButton.TextColor3 = t3
+	gui.HelpButton.TextStrokeColor3 = ts3
+	for i,v in pairs(gui.UpperBar.Offsetter:GetChildren()) do
+		if v:IsA("TextLabel") then
+			v.Text = gui.UpperBar.Labeller.Text
+			v.Size = UDim2.new(0,gui.UpperBar.Labeller.TextBounds.X,1,0)
+			v.TextStrokeColor3 = ts3
+			v.TextColor3 = t3
+		end
+	end
+	
+	gui.Music.BorderColor3 = t3
+	gui.Music.Bar.BackgroundColor3 = ts3
+	gui.Music.Bar.Glow1.BackgroundColor3 = ts3
+	gui.Music.HighLight.BackgroundColor3 = ts3
+	gui.Music.HighLight.Glow1.BackgroundColor3 = ts3
+	gui.Music.CurrentTime.TextColor3 = t3
+	gui.Music.CurrentTime.TextStrokeColor3 = ts3
+	gui.Music.Length.TextColor3 = t3
+	gui.Music.Length.TextStrokeColor3 = ts3
+	gui.Music.SongName.TextColor3 = t3
+	gui.Music.SongName.TextStrokeColor3 = ts3
+	
+	local s = workspace.Camera.ViewportSize.Y/700
+	gui.FormSelection.Size = UDim2.new(0,650*s*gui.WheelSize.Value,0,650*s*gui.WheelSize.Value)
+	
+	local lerp = .3
+	gui.SpinBase.Position = UDim2.new(1,-40*s,1,-40*s)
+	gui.SpinBase.Size = gui.SpinBase.Size:Lerp(UDim2.new(0,400*s+((theme.PlaybackLoudness/4))*theme.PlaybackSpeed*s,0,400*s+((theme.PlaybackLoudness/4))*theme.PlaybackSpeed*s),.5)
+	gui.SpinBase.Spin1.ImageColor3 = t3
+	gui.SpinBase.Spin2.ImageColor3 = ts3
+	gui.SpinBase.Spin2.Gradient.ImageColor3 = t3
+	gui.SpinBase.Spin3.ImageColor3 = ts3
+	gui.SpinBase.Spin4.ImageColor3 = t3
+	gui.SpinBase.Spin4.Gradient.ImageColor3 = ts3
+	gui.SpinBase.Spin5.ImageColor3 = ts3
+	gui.SpinBase.Spin6.ImageColor3 = ts3
+	gui.SpinBase.Spin6.Gradient.ImageColor3 = t3
+	gui.SpinBase.Spin7.ImageColor3 = t3
+	local modifier = 400*s+((theme.PlaybackLoudness/4))*theme.PlaybackSpeed*s
+	gui.SpinBase.Spin1.Rotation = gui.SpinBase.Spin1.Rotation + 1*(theme.PlaybackLoudness/100*(theme.Volume))*2*theme.PlaybackSpeed*modifier/gui.SpinBase.Size.Y.Offset
+	gui.SpinBase.Spin2.Rotation = gui.SpinBase.Spin2.Rotation + -1.1*(theme.PlaybackLoudness/100*(theme.Volume))*2*theme.PlaybackSpeed*modifier/gui.SpinBase.Size.Y.Offset
+	gui.SpinBase.Spin3.Rotation = gui.SpinBase.Spin3.Rotation + 1.6*(theme.PlaybackLoudness/100*(theme.Volume))*2*theme.PlaybackSpeed*modifier/gui.SpinBase.Size.Y.Offset
+	gui.SpinBase.Spin4.Rotation = gui.SpinBase.Spin4.Rotation + -1.3*(theme.PlaybackLoudness/100*(theme.Volume))*2*theme.PlaybackSpeed*modifier/gui.SpinBase.Size.Y.Offset
+	gui.SpinBase.Spin5.Rotation = gui.SpinBase.Spin5.Rotation + 1.3*(theme.PlaybackLoudness/100*(theme.Volume))*2*theme.PlaybackSpeed*modifier/gui.SpinBase.Size.Y.Offset
+	gui.SpinBase.Spin6.Rotation = gui.SpinBase.Spin6.Rotation + -.8*(theme.PlaybackLoudness/100*(theme.Volume))*2*theme.PlaybackSpeed*modifier/gui.SpinBase.Size.Y.Offset
+	
+	gui.SettingsMenu.BackgroundColor3 = t3
+	gui.SettingsMenu.BorderColor3 = ts3
+	for i,v in pairs(gui.SettingsMenu:GetDescendants()) do
+		if v:IsA("TextButton") or v:IsA("TextBox") or v:IsA("TextLabel") then
+			v.TextStrokeColor3 = ts3
+			v.TextColor3 = t3
+			v.BackgroundColor3 = t3
+			v.BorderColor3 = ts3
+			v.BorderSizePixel = 5*s
+		elseif v.Name == "Glow" then
+			v.BackgroundColor3 = ts3
+		elseif v.Name == "Glow1" then
+			v.ImageColor3 = ts3
+		end
+	end
+	gui.SettingsMenu.BorderSizePixel = 5*s
+	gui.Music.BorderSizePixel = 5*s
+	
+	for i,v in pairs(gui.MobileAttacks:GetChildren()) do
+		v.BackgroundColor3 = t3
+		local r,g,b = 255-ts3.R*255,255-ts3.G*255,255-ts3.B*255
+		local c3 = Color3.fromRGB(ts3.R*255+(r/4+r/4*math.cos(sine/-10))*v.Border.Value,ts3.G*255+(g/4+g/4*math.cos(sine/-10))*v.Border.Value,ts3.B*255+(b/4+b/4*math.cos(sine/-10))*v.Border.Value)
+		v.BorderColor3 = c3
+		v.BorderSizePixel = 5+(10+5*math.cos(sine/10))*v.Border.Value*s
+		v.TextLabel.TextColor3 = t3
+		v.TextLabel.TextStrokeColor3 = ts3
+		v.AnchorPoint = Vector2.new(0.05+.05*math.cos(sine/(35+i*2)),.1+.1*math.cos(sine/(40+i*2)))
+		v.Rotation = 1*math.cos(sine/(50+i*2))
+		v.Glow.BackgroundColor3 = ts3
+		v.Glow2.BackgroundColor3 = ts3
+	end
+	for i,v in pairs(gui.Visualiser.Base:GetChildren()) do
+		if v:IsA("Frame") then
+			v.Power.Value += 1
+			v.Size = v.Size:Lerp(UDim2.new(0,theme.PlaybackLoudness*s*.5*theme.PlaybackSpeed*theme.Volume/1.5*(.75+.25*math.cos(v.Power.Value/15)),0.015,0),.3)
+			v.UIGradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,ts3),ColorSequenceKeypoint.new(1,t3)})
+		end
+	end
+	for i,v in pairs({gui.MobileFormChange,gui.MobileSongMute}) do
+		v.BorderColor3 = ts3
+		v.BackgroundColor3 = t3
+		v.TextStrokeColor3 = ts3
+		v.TextColor3 = t3
+		v.BorderSizePixel = 5*s
+		v.Glow.BackgroundColor3 = ts3
+		v.Glow1.BackgroundColor3 = ts3
+	end
+	for i,v in pairs(gui.Stats:GetDescendants()) do
+		if v:IsA("TextLabel") then
+			v.TextStrokeColor3 = ts3
+			v.TextColor3 = t3
+			v.BackgroundColor3 = t3
+		elseif v:IsA("Frame") then
+			v.BackgroundColor3 = ts3
+		end
+	end
+	if script.Parent.Parent:FindFirstChild("Humanoid") then
+		gui.Stats.Jump.Text = "JP / "..script.Parent.Parent.Humanoid.JumpPower
+		gui.Stats.Speed.Text = "SP / "..script.Parent.Parent.Humanoid.WalkSpeed
+		gui.Stats.Atk.Text = "ATK / X"..script.Parent.Values.Attack.Value
+	end
+	
+	offset = 0
+	if theme.SoundId == "rbxassetid://6399708347" then
+		offset = 66
+	elseif theme.SoundId == "rbxassetid://147420686" then
+		offset = 1
+	end
+	
+	gui.Music.Bar.Size = UDim2.new(theme.TimePosition/(theme.TimeLength-offset),0,1,0)
+	gui.Music.CurrentTime.Text = transform(theme.TimePosition)
+	gui.Music.Length.Text = transform(theme.TimeLength-offset)
+	
+	gui.Music.HighLight.Size = UDim2.new((gui.Music.AbsolutePosition.X-mouse.X)*-1/gui.Music.AbsoluteSize.X,0,1,0)
+	
+	if workspace:FindFirstChild("Chaos Spire") then
+		local mag =( workspace["Chaos Spire"].Speen.Crystal.Position-workspace.CurrentCamera.CFrame.Position).Magnitude
+		local y = math.clamp(mag,0,3000)
+		local x =  math.clamp(mag/3000,0,1)
+		for i,v in ipairs({workspace.SpireDistortion,workspace.SpireDistortionB,workspace.SpireDistortionC}) do
+			if v.IsPlaying == false then
+				v:Play()
+			end
+			v.Volume = 1-x
+			if i == 3 then
+				v.Volume = v.Volume*1.5
+			end
+		end
+		if plr:FindFirstChild("HumanoidRootPart") then
+			local mag2 =( workspace["Chaos Spire"].Speen.Crystal.Position-plr.HumanoidRootPart.Position).Magnitude
+			if mag2 < 1000 then
+				local vel = Instance.new("BodyVelocity",plr.HumanoidRootPart)
+				vel.MaxForce = Vector3.new(math.huge,math.huge,math.huge)
+				vel.Velocity = CFrame.new(plr.HumanoidRootPart.Position,workspace["Chaos Spire"].Speen.Crystal.Position).LookVector.Unit*-3000
+				game:GetService("Debris"):AddItem(vel,.1)
+				for i,v in pairs({workspace.Shock1,workspace.Shock2,workspace.Shock3,workspace.Shock4}) do
+					v.TimePosition = 0
+					v:Play()
+				end
+				local cf = CFrame.new(workspace["Chaos Spire"].Speen.Crystal.Position)
+				effect("Sphere",cf,Vector3.new(2000,2000,2000),Color3.fromRGB(255,0,0),Enum.Material.ForceField,0,2,Enum.EasingStyle.Quint,Enum.EasingDirection.Out,false,{Size=Vector3.new(2048,2048,2048)},1,Enum.EasingStyle.Linear)
+				effect("Sphere",cf,Vector3.new(2000,2000,2000),Color3.fromRGB(255,0,0),Enum.Material.ForceField,0,1,Enum.EasingStyle.Quint,Enum.EasingDirection.Out,false,{Size=Vector3.new(2000,2000,2000)},1,Enum.EasingStyle.Sine)
+				effect("Sphere",cf,Vector3.new(2000,2000,2000),Color3.fromRGB(255,0,0),Enum.Material.ForceField,0,2,Enum.EasingStyle.Quint,Enum.EasingDirection.Out,false,{Size=Vector3.new(1900,1900,1900)},1,Enum.EasingStyle.Linear)
+			end
+		end
+		local ft = {"Arcade","Antique","SciFi","Bodoni","Garamond","Oswald","Arial","Bangers","Cartoon","Code","Creepster","DenkOne","Fantasy","Fondamento","FredokaOne","GothamSemibold","GrenzeGotisch","Highway","IndieFlower","JosefinSans","Jura","Kalam","LuckiestGuy","Merriweather","Michroma","Nunito","PatrickHand","PermanentMarker","RobotoMono","Sarpanch","SourceSansSemibold","SpecialElite","Ubuntu","TitilliumWeb"}
+		gui.Worthy.Size = UDim2.new(math.random(25,100)/100,0,.2,0)
+		gui.Worthy.Font = ft[math.random(1,#ft)]
+		gui.Worthy.Rotation = math.random(-5,5)
+		gui.Worthy.TextTransparency = x
+		gui.Worthy.TextStrokeTransparency = x
+		gui.Worthy.AnchorPoint = Vector2.new(math.random(40,60)/100,math.random(40,60)/100)
+		local t = {"YOU ARE NOT WORTHY.","ARE YOU WORTHY?","YOU ARE NOT WORTHY?","?????????????????????","AAAAAAAAAAAAAAAAAAAAA","GET OUT","YOU ARE NOT","YOU ARE NOT WELCOME HERE."}
+		gui.Worthy.Text = t[math.random(1,#t)]
+		workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame*CFrame.Angles(math.rad(math.random(-5,5)*(1-x)),math.rad(math.random(-5,5)*(1-x)),math.rad(math.random(-5,5)*(1-x)))
+		game:GetService("Lighting").ChaosSpireColorCorrection.TintColor = Color3.fromRGB(255,255*x,255*x)
+		game:GetService("Lighting").ChaosSpireColorCorrection.Contrast = 0-(2*(1-x))
+		game:GetService("Lighting").ChaosSpireColorCorrection.Brightness = math.random(-50,0)/100*(1-x)
+	end
+	
+	for i,v in pairs(gui.FormSelection:GetDescendants()) do
+		if v:IsA("TextButton") and v.Parent.Name ~= "Switch" then
+			v.Parent.Marble.Inner.ImageColor3 = v.TextStrokeColor3
+			if v.Text == "EXECUTION" or v.Text == "RAINBOW" then
+				v.TextStrokeColor3 = c3(255,255,255)
+				v.TextColor3 = script.Dynamics.Execution.Value
+				v.Parent.ImageColor3 = script.Dynamics.Execution.Value
+				v.Parent.Marble.ImageColor3 =  script.Dynamics.Execution.Value
+				v.Parent.Marble.Inner.ImageColor3 = c3(255,255,255)
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = c3(255,255,255)
+			elseif v.Text == "STIGMA" then
+				v.TextStrokeColor3 = script.Dynamics.Execution.Value
+				v.TextColor3 = c3(0,0,0)
+				v.Parent.ImageColor3 = script.Dynamics.Execution.Value
+				v.Parent.Marble.ImageColor3 =  script.Dynamics.Execution.Value
+				v.Parent.Marble.Inner.ImageColor3 = c3(0,0,0)
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = c3(0,0,0)
+			elseif v.Text == "SPECTRAFIELD" then
+				v.TextStrokeColor3 = script.Dynamics.Spectrafield.Value
+				v.TextColor3 = c3(255,255,255)
+				v.Parent.ImageColor3 = script.Dynamics.Spectrafield.Value
+				v.Parent.Marble.ImageColor3 =  script.Dynamics.Spectrafield.Value
+				v.Parent.Marble.Inner.ImageColor3 = c3(255,255,255)
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = c3(255,255,255)
+			elseif v.Text == "TURMOIL" then
+				v.TextStrokeColor3 = script.Dynamics.Execution.Value
+				v.TextColor3 = c3(0,0,0)
+				v.Parent.ImageColor3 = script.Dynamics.Execution.Value
+				v.Parent.Marble.ImageColor3 = c3(0,0,0)
+				v.Parent.Marble.Inner.ImageColor3 = script.Dynamics.Execution.Value
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = script.Dynamics.Execution.Value
+			elseif v.Text == "NEBULA" then
+				p = script.Dynamics.NebulaA.Value
+				s = script.Dynamics.NebulaB.Value
+				v.TextStrokeColor3 = p
+				v.TextColor3 = s
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Text == "AURORA" then
+				p = script.Dynamics.Aurora.Value
+				v.TextStrokeColor3 = p
+				v.TextColor3 = Color3.fromRGB(255,255,255)
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = Color3.fromRGB(255,255,255)
+				v.Parent.Marble.Inner.ImageColor3 = p
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = p
+			elseif v.Text == "CHAOS" then
+				local bc = BrickColor.Random().Color
+				p = Color3.new(bc.R,bc.G,bc.B)
+				s = Color3.fromRGB(27,42,53)
+				v.TextStrokeColor3 = p
+				v.TextColor3 = s
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Text == "SHATTERED" then
+				p =  Color3.fromHSV(math.random(1,360)/360,1,1)
+				s = Color3.fromRGB(0,0,0)
+				v.TextStrokeColor3 = s
+				v.TextColor3 = p
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = s
+				v.Parent.Marble.Inner.ImageColor3 = p
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = p
+			elseif v.Text == "DISSONANCE" then
+				local p = Color3.fromHSV(math.random(230,290)/360,math.random(70,100)/100,math.random(10,70)/100)
+				local s = Color3.fromHSV(math.random(230,290)/360,math.random(70,100)/100,math.random(10,70)/100)
+				v.TextStrokeColor3 = p
+				v.TextColor3 = s
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Text == "DISTORTION" then
+				local p = Color3.fromHSV(0,1,math.random(0,100)/100)
+				local s = Color3.fromHSV(0,1,math.random(0,100)/100)
+				v.TextStrokeColor3 = p
+				v.TextColor3 = s
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = s
+				v.Parent.Marble.Inner.ImageColor3 = p
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = p
+			elseif v.Text == "MISMATCHED" then
+				local x = Color3.fromHSV(0,0,math.random(1,100)/100)
+				local z = Color3.fromRGB(255-x.R*255,255-x.G*255,255-x.B*255)
+				v.TextStrokeColor3 = z
+				v.TextColor3 = x
+				v.Parent.ImageColor3 = x
+				v.Parent.Marble.ImageColor3 = x
+				v.Parent.Marble.Inner.ImageColor3 = z
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = z
+			elseif v.Text == "VOID" then
+				p = Color3.fromHSV(0.75+0.015*math.cos(sine/8), 1, 1)
+				s = Color3.new(0.027451, 0, 0.0431373)
+				v.TextStrokeColor3 = p
+				v.TextColor3 = s
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Text == "PERDURANCE" then
+				local g = 0.85+0.15*math.cos(sine/20)
+				local u = script.Parent.Dynamics.Perdurance.Value
+				p = Color3.new(u.R*g,u.G*g,u.B*g)
+				s = Color3.new(u.R*.15,u.G*.15,u.B*.15)
+				v.TextStrokeColor3 = p
+				v.TextColor3 = s
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Text == "REVOLUTION" then
+				local ft = {"Arcade","Antique","SciFi","Bodoni","Garamond","Oswald","Arial","Bangers","Cartoon","Code","Creepster","DenkOne","Fantasy","Fondamento","FredokaOne","GothamSemibold","GrenzeGotisch","Highway","IndieFlower","JosefinSans","Jura","Kalam","LuckiestGuy","Merriweather","Michroma","Nunito","PatrickHand","PermanentMarker","RobotoMono","Sarpanch","SourceSansSemibold","SpecialElite","Ubuntu","TitilliumWeb"}
+				v.Font = ft[math.random(1,#ft)]
+			elseif v.Text == "INFERNO" then
+				p = Color3.fromHSV(0.0696944, 0.909804, math.random(75,100)*0.01)
+				s = Color3.new(0.0588235, 0.0588235, 0.0784314)
+				v.TextStrokeColor3 = s
+				v.TextColor3 = p
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Parent.ID.Value == "NIHIL" then
+				p = Color3.fromHSV(240/360,math.random(0,100)/100,math.random(0,100)/100)
+				s = Color3.fromHSV(240/360,math.random(0,100)/100,math.random(0,100)/100)
+				v.TextStrokeColor3 = s
+				v.TextColor3 = p
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				local n,i,h,l = {"N","n"},{"I","i"},{"H","h"},{"L","l"}
+				v.Text = n[math.random(1,2)]..i[math.random(1,2)]..h[math.random(1,2)]..i[math.random(1,2)]..l[math.random(1,2)]
+				local ft = {"Arcade","Antique","SciFi","Bodoni","Garamond","Oswald","Arial","Bangers","Cartoon","Code","Creepster","DenkOne","Fantasy","Fondamento","FredokaOne","GothamSemibold","GrenzeGotisch","Highway","IndieFlower","JosefinSans","Jura","Kalam","LuckiestGuy","Merriweather","Michroma","Nunito","PatrickHand","PermanentMarker","RobotoMono","Sarpanch","SourceSansSemibold","SpecialElite","Ubuntu","TitilliumWeb"}
+				v.Font = ft[math.random(1,#ft)]
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Parent.ID.Value == "ABERRATION" then
+				local ctable = {
+					[1]={Color3.fromRGB(252, 226, 5);Color3.fromRGB(225, 225, 255)};
+					[2]={Color3.fromRGB(155, 135, 12);Color3.fromRGB(0, 0, 0)};
+					[3]={Color3.fromRGB(143, 139, 102);Color3.fromRGB(86, 86, 86)};
+				}
+				local ma = math.random(1,3)
+				p = ctable[ma][1]
+				s = ctable[ma][2]
+				v.TextStrokeColor3 = p
+				v.TextColor3 = s
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = s
+				v.Parent.Marble.Inner.ImageColor3 = p
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = p
+			elseif v.Parent.ID.Value == "ANOMALY" then
+				p = Color3.fromHSV(0,math.random(0,100)/100,math.random(0,100)/100)
+				s = Color3.fromHSV(0,math.random(0,100)/100,math.random(0,100)/100)
+				v.TextStrokeColor3 = s
+				v.TextColor3 = p
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Parent.ID.Value == "TERMINATION" then
+				p = Color3.fromHSV(120/360,math.random(0,100)/100,math.random(0,100)/100)
+				s = Color3.fromHSV(120/360,math.random(0,100)/100,math.random(0,100)/100)
+				local t,e,r,m,i,n,a,o,n = {"T","t"},{"E","e"},{"R","r"},{"M","m"},{"I","i"},{"N","n"},{"A","a"},{"O","o"},{"N","n"}
+				v.TextStrokeColor3 = s
+				v.TextColor3 = p
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Text = t[math.random(1,2)]..e[math.random(1,2)]..r[math.random(1,2)]..m[math.random(1,2)]..i[math.random(1,2)]..n[math.random(1,2)]..a[math.random(1,2)]..t[math.random(1,2)]..i[math.random(1,2)]..o[math.random(1,2)]..n[math.random(1,2)]
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Parent.ID.Value == "404" then
+				local x = math.random(1,3)
+				local under  = {"","_",}
+				if x > 1 then
+					v.Text = "404"..under[math.random(1,#under)]
+					p = Color3.fromRGB(47, 78, 255)
+					s = Color3.fromRGB(24, 40, 130)
+				else
+					local under  = {"","_","_?","_!","!"}
+					v.Text = under[math.random(1,#under)]..under[math.random(1,#under)]..under[math.random(1,#under)].."???"
+					p = Color3.fromRGB(0,0,0)
+					s = Color3.fromRGB(255,255,255)
+				end
+				v.TextStrokeColor3 = p
+				v.TextColor3 = s
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = s
+				v.Parent.Marble.Inner.ImageColor3 = p
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = p
+			elseif v.Parent.ID.Value == "SYSTEM_" then
+				p = Color3.fromHSV(0,1,math.random(0,100)/100)
+				s = Color3.fromHSV(0,1,math.random(0,100)/100)
+				local ntable = {"SYSTEM_","SYSTEM_LOST","SYSTEM_EXCEPTION","SYSTEM_NULL","SYSTEM_CRASH","SYSMTE_SHUTDOWN","SYSTEM_DELETED","SYSTEM_NOT_FOUND","SYSTEM_FATALITY","SYSTEM_???","SYSTEM_ERROR","SYSTEM_CORRUPTED","SYSTEM_FAILURE","SYSTEM_UNKNOWN"}
+				v.TextStrokeColor3 = s
+				v.TextColor3 = p
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Text = ntable[math.random(1,#ntable)]
+				v.Parent.Marble.Inner.ImageColor3 = s
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Parent.ID.Value == "ALTERATION" then
+				p = Color3.fromHSV(0,0,math.random(1,100)/100)
+				s = Color3.fromHSV(0,0,math.random(1,100)/100)
+				v.TextStrokeColor3 = s
+				v.TextColor3 = p
+				v.Parent.ImageColor3 = p
+				v.Parent.Marble.ImageColor3 = p
+				v.Parent.Marble.Inner.ImageColor3 = s
+					v.Parent.Marble.Inner.Pattern.ImageColor3 = s
+			elseif v.Parent.ID.Value == "ALACRITY" then
+				v.TextStrokeColor3 = Color3.fromRGB(255,200,50)
+				v.TextColor3 = Color3.fromRGB(0,200,0)
+				v.Parent.ImageColor3 = Color3.fromRGB(0,200,0)
+				v.Parent.Marble.ImageColor3 = Color3.fromRGB(0,200,0)
+				v.Parent.Marble.Inner.ImageColor3 = Color3.fromRGB(255,200,50)
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = Color3.fromRGB(255,200,50)
+			elseif v.Parent.ID.Value == "INTRICACY" then
+				v.TextStrokeColor3 = Color3.fromRGB(255,255,555)
+				v.TextColor3 = Color3.fromRGB(0,255,0)
+				v.Parent.ImageColor3 = Color3.fromRGB(0,255,0)
+				v.Parent.Marble.ImageColor3 = Color3.fromRGB(255,255,555)
+				v.Parent.Marble.Inner.ImageColor3 = Color3.fromRGB(0,255,0)
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = Color3.fromRGB(100,255,100)
+			elseif v.Text == "" then
+				v.Parent.ImageColor3 = c3(20,20,20)
+			else
+				v.TextStrokeColor3 = v.Parent.Primary.Value
+				v.TextColor3 = v.Parent.Secondary.Value
+				v.Parent.ImageColor3 = v.Parent.Primary.Value
+				v.Parent.Marble.ImageColor3 = v.TextColor3
+				v.Parent.Marble.Inner.ImageColor3 = v.TextStrokeColor3
+				v.Parent.Marble.Inner.Pattern.ImageColor3 = v.TextStrokeColor3
+			end
+		end
+	end
+	
+end)
+
+local menuinfo = TweenInfo.new(.3,Enum.EasingStyle.Quad,Enum.EasingDirection.Out,0,false,0)
+local m1,m2 = {AnchorPoint = Vector2.new(0,.5)},{AnchorPoint = Vector2.new(.8,.5)}
+local mt1,mt2 = tweens:Create(gui.SettingsMenu,menuinfo,m1),tweens:Create(gui.SettingsMenu,menuinfo,m2)
+
+gui.SettingsMenu.MouseEnter:Connect(function()
+	if inputs.MouseEnabled == true and inputs.KeyboardEnabled == true and inputs.TouchEnabled == false then
+		mt1:Play()
+	end
+end)
+gui.SettingsMenu.MouseLeave:Connect(function()
+	if inputs.MouseEnabled == true and inputs.KeyboardEnabled == true and inputs.TouchEnabled == false then
+		mt2:Play()
+	end
+end)
+
+local open = false
+gui.SettingsMenu.MouseButton1Click:Connect(function()
+	if inputs.MouseEnabled == false and inputs.KeyboardEnabled == false and inputs.TouchEnabled == true then
+		if open == false then
+			open = true
+			mt1:Play()
+		else
+			open = false
+			mt2:Play()
+		end
+	end
+end)
+
+gui.SettingsMenu.EffectLimit.Changed:Connect(function(change)
+	if change == "Text" then
+		local ef = gui.SettingsMenu.EffectLimit
+		if tonumber(ef.Text) then
+			plr.LastStar.Settings.EffectLimit.Value = tonumber(ef.Text)
+		else
+			plr.LastStar.Settings.EffectLimit.Value = tonumber(0)
+		end
+	end
+end)
+
+gui.SettingsMenu.Aura.MouseButton1Click:Connect(function()
+	if gui.SettingsMenu.Aura.Text == "All" then
+		gui.SettingsMenu.Aura.Text = "You"
+		plr.LastStar.Settings.Auras.Value = "You"
+	elseif gui.SettingsMenu.Aura.Text == "You" then
+		gui.SettingsMenu.Aura.Text = "None"
+		plr.LastStar.Settings.Auras.Value = "None"
+	else
+		gui.SettingsMenu.Aura.Text = "All"
+		plr.LastStar.Settings.Auras.Value = "All"
+	end
+end)
+
+gui.SettingsMenu.Chat.MouseButton1Click:Connect(function()
+	if gui.SettingsMenu.Chat.Text == "Typewriter" then
+		gui.SettingsMenu.Chat.Text = "Instant"
+		plr.LastStar.Settings.ChatType.Value = "Instant"
+	elseif gui.SettingsMenu.Chat.Text == "Instant" then
+		gui.SettingsMenu.Chat.Text = "Simple"
+		plr.LastStar.Settings.ChatType.Value = "Simple"
+	else
+		gui.SettingsMenu.Chat.Text = "Typewriter"
+		plr.LastStar.Settings.ChatType.Value = "Typewriter"
+	end
+end)
+
+gui.SettingsMenu.Camshake.MouseButton1Click:Connect(function()
+	if gui.SettingsMenu.Camshake.Text == "On" then
+		gui.SettingsMenu.Camshake.Text = "Off"
+		plr.LastStar.Settings.Camshake.Value = 0
+	else
+		gui.SettingsMenu.Camshake.Text = "On"
+		plr.LastStar.Settings.Camshake.Value = 1
+	end
+end)
+
+gui.Music.Button.MouseButton1Click:Connect(function()
+	script.Parent.Events.MusicRemote:FireServer((theme.TimeLength-offset)*(gui.Music.AbsolutePosition.X-mouse.X)*-1/gui.Music.AbsoluteSize.X)
+end)
+
+coroutine.resume(coroutine.create(function()
+	while true do
+		wait()
+		gui.FormSelection.Rotation += .1
+		for i,v in pairs(gui.FormSelection:GetDescendants()) do
+			if v.Name == "Marble" then
+				v.Rotation -= .1
+			end
+		end
+		gui.FormSelection.BackButton.Label.Rotation -= .1
+		gui.FormSelection.Shade.Rotation -= .1
+	end
+end))
+
+local info = TweenInfo.new(.2,Enum.EasingStyle.Sine,Enum.EasingDirection.Out,0,false,0)
+local info2 = TweenInfo.new(.2,Enum.EasingStyle.Sine,Enum.EasingDirection.In,0,false,0)
+local prop1,prop2 = {Value=1},{Value=0}
+local tween1,tween2 = tweens:Create(gui.WheelSize,info,prop1),tweens:Create(gui.WheelSize,info2,prop2)
+local showingwheel = false
+inputs.InputBegan:Connect(function(key,aaa)
+	if not aaa then
+		if key.UserInputType == Enum.UserInputType.Keyboard then
+			if key.KeyCode == Enum.KeyCode.E then
+				if showingwheel == false then
+					tween1:Play()
+					showingwheel = true
+				else
+					tween2:Play()
+					showingwheel = false
+				end
+			end
+		end
+	end
+end)
+
+gui.MobileSongMute.MouseButton1Click:Connect(function()
+	script.Parent.Events.Key:FireServer(Enum.KeyCode.L,"on")
+end)
+gui.MobileFormChange.MouseButton1Click:Connect(function()
+	if showingwheel == false then
+		tween1:Play()
+		showingwheel = true
+	else
+		tween2:Play()
+		showingwheel = false
+	end
+end)
+local sliceinfo = TweenInfo.new(.1,Enum.EasingStyle.Sine,Enum.EasingDirection.InOut,0,false,0)
+local p1,p2 = {Size=UDim2.new(1.1,0,1.1,0)},{Size=UDim2.new(1,0,1,0)}
+local p3,p4 = {Size=UDim2.new(.1,0,.1,0)},{Size=UDim2.new(.07,0,.07,0)}
+
+local hinfo = TweenInfo.new(.4,Enum.EasingStyle.Circular,Enum.EasingDirection.Out,0,false,0)
+local switchedcolour = Color3.fromRGB(0,0,0)
+for i,v in pairs(gui.FormSelection:GetChildren()) do
+	if v:IsA("ImageLabel") then
+		
+		local prop = {ImageTransparency=1}
+		local tween = tweens:Create(v:WaitForChild("Highlight"),hinfo,prop)
+		v.ID.Changed:Connect(function()
+			v.Highlight.ImageTransparency = 0
+			tween:Play()
+		end)
+		
+		local t1,t2 = tweens:Create(v,sliceinfo,p1),tweens:Create(v,sliceinfo,p2)
+		v.TextButton.MouseEnter:Connect(function()
+			t1:Play()
+		end)
+		v.TextButton.MouseLeave:Connect(function()
+			t2:Play()
+		end)
+		v.TextButton.MouseButton1Click:Connect(function()
+			if v.TextButton.Text ~= script.Parent.Values.CurrentForm.Value then
+				script.Parent.Events.Switching:FireServer(v.ID.Value)
+				switchedcolour = v.ImageColor3
+				tween2:Play()
+				showingwheel = false
+			else
+				script.Parent.Events.Switching:FireServer(v.ID.Value.."MAJORS")
+			end
+		end)
+		local t3,t4 = tweens:Create(v.Marble,sliceinfo,p3),tweens:Create(v.Marble,sliceinfo,p4)
+		v.Marble.MouseEnter:Connect(function()
+			t3:Play()
+		end)
+		v.Marble.MouseLeave:Connect(function()
+			t4:Play()
+		end)
+		v.Marble.MouseButton1Click:Connect(function()
+			if v.TextButton.Text ~= script.Parent.Values.CurrentForm.Value then
+				script.Parent.Events.Switching:FireServer(v.ID.Value)
+				switchedcolour = v.ImageColor3
+			end
+			script.Parent.Events.Switching:FireServer(v.ID.Value.."ALTS")
+		end)
+	end
+end
+gui.FormSelection.BackButton.MouseButton1Click:Connect(function()
+	script.Parent.Events.Switching:FireServer("GOBACK")
+end)
+local button = gui.FormSelection.Shade.Switch.Button
+
+if game:GetService("Players").LocalPlayer.Name == "Asarii_IV" then
+	gui.FormSelection.Shade.Switch.Visible=true
+end
+
+button.MouseButton1Click:Connect(function()
+	if button.Text == "DISGRACE" then
+		button.Text = "STANDARD"
+		script.Parent.Events.Switching:FireServer("DISGRACE")
+		script.Parent.Events.Switching:FireServer("DOWNFALL")
+	else
+		button.Text = "DISGRACE"
+		script.Parent.Events.Switching:FireServer("BASE")
+		script.Parent.Events.Switching:FireServer("APEX")
+	end
+end)
+
+
+local sinfo = TweenInfo.new(.5,Enum.EasingStyle.Circular,Enum.EasingDirection.Out,0,false,0)
+local sprop = {BackgroundTransparency=1}
+local stween = tweens:Create(gui.SwitchShine,sinfo,sprop)
+game:GetService("Players").LocalPlayer.Character:WaitForChild("Values"):WaitForChild("CurrentForm").Changed:Connect(function()
+	gui.SwitchShine.BackgroundColor3 = switchedcolour
+	gui.SwitchShine.BackgroundTransparency=0
+	stween:Play()
+end)
+
+game:GetService("RunService").RenderStepped:Connect(function()
+wait()
+if script.Values:WaitForChild("WingStyle").Value == "VISUALISER" then
+    local LocalLoudness = 0
+	Loud,LocalLoudness = theme.PlaybackLoudness,math.ceil(Loud)
+	script.Events.VisualizerEvent:FireServer(LocalLoudness)
+end
+end)
+
+for i = 1,90 do
+	local w = gui.Visualiser.Vis:Clone()
+	w.Parent = gui.Visualiser.Base
+	w.Visible=true
+	w.Power.Value = i*1.5
+end
+for i = 1,20 do
+	local l = gui.UpperBar.Labeller:Clone()
+	l.Parent = gui.UpperBar.Offsetter
+	l.Size = UDim2.new(0,gui.UpperBar.Labeller.TextBounds.X,1,0)
+	l.Visible=true
+end
+
+while true do
+	game:GetService("RunService").Heartbeat:Wait()
+	sine += 1
+	for i,v in pairs({gui.MobileSongMute,gui.MobileFormChange}) do
+		v.AnchorPoint = Vector2.new(.95+.05*math.cos(sine/30+(i*4)),.5+.05*math.sin(sine/34+(i*6)))
+		v.Rotation = 2*math.cos(sine/25+(i*7))
+	end
+	if aiming == false then
+		gui.Music.AnchorPoint = gui.Music.AnchorPoint:Lerp(Vector2.new(0.025+0.025*math.cos(sine/33),.6+0.4*math.sin(sine/39)),.1)
+		gui.Music.Rotation = 2*math.cos(sine/54)*(gui.Music.AnchorPoint.Y/.5)
+	else
+		gui.Music.AnchorPoint = gui.Music.AnchorPoint:Lerp(Vector2.new(0,.5),.1)
+		gui.Music.Rotation = 2*math.cos(sine/54)*(1-(gui.Music.AnchorPoint.Y/.5))
+	end
+	gui.Music.CurrentTime.AnchorPoint = Vector2.new(0.025+0.025*math.cos(sine/29),.9+0.1*math.sin(sine/42))
+	gui.Music.CurrentTime.Rotation = 2*math.cos(sine/62)
+	gui.Music.Length.AnchorPoint = Vector2.new(9.975+0.025*math.cos(sine/25),.9+0.1*math.sin(sine/37))
+	gui.Music.Length.Rotation = 2*math.cos(sine/60)
+	gui.Music.SongName.AnchorPoint = Vector2.new(0.02+0.02*math.cos(sine/24.5),.2+0.2*math.sin(sine/45))
+	gui.Music.SongName.Rotation = 2*math.cos(sine/55)
+	for i,v in pairs(gui.Stats:GetChildren()) do
+		v.Rotation = 2*math.cos(sine/60+(i*3))
+		v.AnchorPoint = Vector2.new(.5+.05*math.cos(sine/45+(i*5)),.5+.2*math.cos(sine/55+(i*7)))
+	end
+end
